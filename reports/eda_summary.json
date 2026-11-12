@@ -1,0 +1,20 @@
+{
+  "rows": 800,
+  "columns": 27,
+  "duplicate_ids": 0,
+  "target_rate": 0.15875,
+  "target_counts": {
+    "0": 673,
+    "1": 127
+  },
+  "employment_sentinel": 240,
+  "age_mean": 44.46109856262834,
+  "missing_top": {
+    "EXT_SOURCE_1": 0.3937,
+    "OCCUPATION_TYPE": 0.2963,
+    "EXT_SOURCE_3": 0.1837,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 0.07,
+    "AMT_ANNUITY": 0.0187
+  },
+  "source": "synthetic_fixture"
+}

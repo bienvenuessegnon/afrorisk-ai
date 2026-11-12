@@ -1,0 +1,540 @@
+{
+  "data_source": "synthetic_fixture",
+  "placeholder": true,
+  "n_rows": 800,
+  "positive_rate": 0.15875,
+  "cv_folds": 5,
+  "fast_mode": true,
+  "cost_fn": 5.0,
+  "cost_fp": 1.0,
+  "generated_at": "2026-11-12T14:32:14+00:00",
+  "served": {
+    "selected_model": "random_forest",
+    "threshold": 0.35,
+    "metrics": {
+      "roc_auc": 0.5979923014823743,
+      "pr_auc": 0.20421079108997764,
+      "precision": 0.19642857142857142,
+      "recall": 0.6062992125984252,
+      "f1": 0.29672447013487474,
+      "confusion_matrix": [
+        [
+          358,
+          315
+        ],
+        [
+          50,
+          77
+        ]
+      ],
+      "threshold": 0.35
+    },
+    "metrics_at_05": {
+      "roc_auc": 0.5979923014823743,
+      "pr_auc": 0.20421079108997764,
+      "precision": 0.23015873015873015,
+      "recall": 0.2283464566929134,
+      "f1": 0.22924901185770752,
+      "confusion_matrix": [
+        [
+          576,
+          97
+        ],
+        [
+          98,
+          29
+        ]
+      ],
+      "threshold": 0.5
+    },
+    "comparison": [
+      {
+        "model": "random_forest",
+        "roc_auc": 0.5979923014823743,
+        "pr_auc": 0.20421079108997764,
+        "precision": 0.19642857142857142,
+        "recall": 0.6062992125984252,
+        "f1": 0.29672447013487474,
+        "threshold": 0.35,
+        "confusion_matrix": [
+          [
+            358,
+            315
+          ],
+          [
+            50,
+            77
+          ]
+        ]
+      },
+      {
+        "model": "lightgbm",
+        "roc_auc": 0.5842683483286729,
+        "pr_auc": 0.18812857649405018,
+        "precision": 0.2037914691943128,
+        "recall": 0.6771653543307087,
+        "f1": 0.3132969034608379,
+        "threshold": 0.3,
+        "confusion_matrix": [
+          [
+            337,
+            336
+          ],
+          [
+            41,
+            86
+          ]
+        ]
+      },
+      {
+        "model": "decision_tree",
+        "roc_auc": 0.5803313404546572,
+        "pr_auc": 0.19040526571198751,
+        "precision": 0.19714964370546317,
+        "recall": 0.6535433070866141,
+        "f1": 0.3029197080291971,
+        "threshold": 0.35,
+        "confusion_matrix": [
+          [
+            335,
+            338
+          ],
+          [
+            44,
+            83
+          ]
+        ]
+      },
+      {
+        "model": "xgboost",
+        "roc_auc": 0.5780440149290402,
+        "pr_auc": 0.1902590105779809,
+        "precision": 0.21634615384615385,
+        "recall": 0.3543307086614173,
+        "f1": 0.26865671641791045,
+        "threshold": 0.5,
+        "confusion_matrix": [
+          [
+            510,
+            163
+          ],
+          [
+            82,
+            45
+          ]
+        ]
+      },
+      {
+        "model": "logistic_regression",
+        "roc_auc": 0.5753647435972435,
+        "pr_auc": 0.2062102801085635,
+        "precision": 0.24705882352941178,
+        "recall": 0.33070866141732286,
+        "f1": 0.2828282828282828,
+        "threshold": 0.6,
+        "confusion_matrix": [
+          [
+            545,
+            128
+          ],
+          [
+            85,
+            42
+          ]
+        ]
+      }
+    ],
+    "threshold_curve": [
+      {
+        "threshold": 0.05,
+        "precision": 0.15875,
+        "recall": 1.0,
+        "f1": 0.2740021574973031,
+        "tn": 0,
+        "fp": 673,
+        "fn": 0,
+        "tp": 127,
+        "cost": 673.0
+      },
+      {
+        "threshold": 0.1,
+        "precision": 0.15862944162436549,
+        "recall": 0.984251968503937,
+        "f1": 0.273224043715847,
+        "tn": 10,
+        "fp": 663,
+        "fn": 2,
+        "tp": 125,
+        "cost": 673.0
+      },
+      {
+        "threshold": 0.15,
+        "precision": 0.16688918558077437,
+        "recall": 0.984251968503937,
+        "f1": 0.2853881278538813,
+        "tn": 49,
+        "fp": 624,
+        "fn": 2,
+        "tp": 125,
+        "cost": 634.0
+      },
+      {
+        "threshold": 0.2,
+        "precision": 0.17251461988304093,
+        "recall": 0.9291338582677166,
+        "f1": 0.2909987669543773,
+        "tn": 107,
+        "fp": 566,
+        "fn": 9,
+        "tp": 118,
+        "cost": 611.0
+      },
+      {
+        "threshold": 0.25,
+        "precision": 0.18319327731092436,
+        "recall": 0.8582677165354331,
+        "f1": 0.30193905817174516,
+        "tn": 187,
+        "fp": 486,
+        "fn": 18,
+        "tp": 109,
+        "cost": 576.0
+      },
+      {
+        "threshold": 0.3,
+        "precision": 0.18712273641851107,
+        "recall": 0.7322834645669292,
+        "f1": 0.2980769230769231,
+        "tn": 269,
+        "fp": 404,
+        "fn": 34,
+        "tp": 93,
+        "cost": 574.0
+      },
+      {
+        "threshold": 0.35,
+        "precision": 0.19642857142857142,
+        "recall": 0.6062992125984252,
+        "f1": 0.29672447013487474,
+        "tn": 358,
+        "fp": 315,
+        "fn": 50,
+        "tp": 77,
+        "cost": 565.0
+      },
+      {
+        "threshold": 0.4,
+        "precision": 0.19434628975265017,
+        "recall": 0.4330708661417323,
+        "f1": 0.2682926829268293,
+        "tn": 445,
+        "fp": 228,
+        "fn": 72,
+        "tp": 55,
+        "cost": 588.0
+      },
+      {
+        "threshold": 0.45,
+        "precision": 0.19170984455958548,
+        "recall": 0.29133858267716534,
+        "f1": 0.23125,
+        "tn": 517,
+        "fp": 156,
+        "fn": 90,
+        "tp": 37,
+        "cost": 606.0
+      },
+      {
+        "threshold": 0.5,
+        "precision": 0.23015873015873015,
+        "recall": 0.2283464566929134,
+        "f1": 0.22924901185770752,
+        "tn": 576,
+        "fp": 97,
+        "fn": 98,
+        "tp": 29,
+        "cost": 587.0
+      },
+      {
+        "threshold": 0.55,
+        "precision": 0.22413793103448276,
+        "recall": 0.10236220472440945,
+        "f1": 0.14054054054054055,
+        "tn": 628,
+        "fp": 45,
+        "fn": 114,
+        "tp": 13,
+        "cost": 615.0
+      },
+      {
+        "threshold": 0.6,
+        "precision": 0.2,
+        "recall": 0.03937007874015748,
+        "f1": 0.06578947368421052,
+        "tn": 653,
+        "fp": 20,
+        "fn": 122,
+        "tp": 5,
+        "cost": 630.0
+      },
+      {
+        "threshold": 0.65,
+        "precision": 0.25,
+        "recall": 0.015748031496062992,
+        "f1": 0.02962962962962963,
+        "tn": 667,
+        "fp": 6,
+        "fn": 125,
+        "tp": 2,
+        "cost": 631.0
+      },
+      {
+        "threshold": 0.7,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tn": 673,
+        "fp": 0,
+        "fn": 127,
+        "tp": 0,
+        "cost": 635.0
+      },
+      {
+        "threshold": 0.75,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tn": 673,
+        "fp": 0,
+        "fn": 127,
+        "tp": 0,
+        "cost": 635.0
+      },
+      {
+        "threshold": 0.8,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tn": 673,
+        "fp": 0,
+        "fn": 127,
+        "tp": 0,
+        "cost": 635.0
+      },
+      {
+        "threshold": 0.85,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tn": 673,
+        "fp": 0,
+        "fn": 127,
+        "tp": 0,
+        "cost": 635.0
+      },
+      {
+        "threshold": 0.9,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tn": 673,
+        "fp": 0,
+        "fn": 127,
+        "tp": 0,
+        "cost": 635.0
+      },
+      {
+        "threshold": 0.95,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tn": 673,
+        "fp": 0,
+        "fn": 127,
+        "tp": 0,
+        "cost": 635.0
+      }
+    ],
+    "global_factors": [
+      {
+        "feature": "CREDIT_INCOME_RATIO",
+        "label": "Crédit / revenu",
+        "mean_abs_shap": 0.048587
+      },
+      {
+        "feature": "ANNUITY_INCOME_RATIO",
+        "label": "Annuité / revenu",
+        "mean_abs_shap": 0.033581
+      },
+      {
+        "feature": "EXT_SOURCE_MEAN",
+        "label": "Moyenne des scores externes",
+        "mean_abs_shap": 0.028717
+      },
+      {
+        "feature": "EXT_SOURCE_2",
+        "label": "Score externe 2",
+        "mean_abs_shap": 0.021052
+      },
+      {
+        "feature": "AMT_CREDIT",
+        "label": "Montant du crédit",
+        "mean_abs_shap": 0.018738
+      },
+      {
+        "feature": "EXT_SOURCE_3",
+        "label": "Score externe 3",
+        "mean_abs_shap": 0.01768
+      },
+      {
+        "feature": "EXT_SOURCE_1",
+        "label": "Score externe 1",
+        "mean_abs_shap": 0.015973
+      },
+      {
+        "feature": "AMT_GOODS_PRICE",
+        "label": "Prix du bien",
+        "mean_abs_shap": 0.01538
+      },
+      {
+        "feature": "AMT_INCOME_TOTAL",
+        "label": "Revenu annuel",
+        "mean_abs_shap": 0.014641
+      },
+      {
+        "feature": "AMT_ANNUITY",
+        "label": "Annuité",
+        "mean_abs_shap": 0.013788
+      },
+      {
+        "feature": "NAME_EDUCATION_TYPE",
+        "label": "Niveau d'études",
+        "mean_abs_shap": 0.012907
+      },
+      {
+        "feature": "CODE_GENDER",
+        "label": "Sexe",
+        "mean_abs_shap": 0.011778
+      }
+    ]
+  },
+  "research": {
+    "selected_model": "xgboost",
+    "threshold": 0.3,
+    "metrics": {
+      "roc_auc": 0.6249254132980777,
+      "pr_auc": 0.2174255110004255,
+      "precision": 0.21365638766519823,
+      "recall": 0.7637795275590551,
+      "f1": 0.33390705679862304,
+      "confusion_matrix": [
+        [
+          316,
+          357
+        ],
+        [
+          30,
+          97
+        ]
+      ],
+      "threshold": 0.3
+    },
+    "comparison": [
+      {
+        "model": "xgboost",
+        "roc_auc": 0.6249254132980777,
+        "pr_auc": 0.2174255110004255,
+        "precision": 0.21365638766519823,
+        "recall": 0.7637795275590551,
+        "f1": 0.33390705679862304,
+        "threshold": 0.3,
+        "confusion_matrix": [
+          [
+            316,
+            357
+          ],
+          [
+            30,
+            97
+          ]
+        ]
+      },
+      {
+        "model": "random_forest",
+        "roc_auc": 0.62424682055902,
+        "pr_auc": 0.2436647605807915,
+        "precision": 0.21714285714285714,
+        "recall": 0.5984251968503937,
+        "f1": 0.31865828092243187,
+        "threshold": 0.35,
+        "confusion_matrix": [
+          [
+            399,
+            274
+          ],
+          [
+            51,
+            76
+          ]
+        ]
+      },
+      {
+        "model": "lightgbm",
+        "roc_auc": 0.6224333399632623,
+        "pr_auc": 0.22415853023240037,
+        "precision": 0.24766355140186916,
+        "recall": 0.41732283464566927,
+        "f1": 0.31085043988269795,
+        "threshold": 0.45,
+        "confusion_matrix": [
+          [
+            512,
+            161
+          ],
+          [
+            74,
+            53
+          ]
+        ]
+      },
+      {
+        "model": "decision_tree",
+        "roc_auc": 0.6206725088041558,
+        "pr_auc": 0.2286119741868756,
+        "precision": 0.2422907488986784,
+        "recall": 0.4330708661417323,
+        "f1": 0.3107344632768362,
+        "threshold": 0.7,
+        "confusion_matrix": [
+          [
+            501,
+            172
+          ],
+          [
+            72,
+            55
+          ]
+        ]
+      },
+      {
+        "model": "logistic_regression",
+        "roc_auc": 0.5603772039639177,
+        "pr_auc": 0.19044664463361563,
+        "precision": 0.22058823529411764,
+        "recall": 0.3543307086614173,
+        "f1": 0.2719033232628399,
+        "threshold": 0.6,
+        "confusion_matrix": [
+          [
+            514,
+            159
+          ],
+          [
+            82,
+            45
+          ]
+        ]
+      }
+    ]
+  }
+}

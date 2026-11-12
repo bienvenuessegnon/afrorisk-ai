@@ -1,0 +1,38 @@
+{
+  "model_name": "random_forest",
+  "placeholder": true,
+  "data_source": "synthetic_fixture",
+  "n_rows": 800,
+  "trained_at": "2026-11-12T14:32:14+00:00",
+  "threshold": 0.35,
+  "numeric_features": [
+    "AMT_INCOME_TOTAL",
+    "AMT_CREDIT",
+    "AMT_ANNUITY",
+    "AMT_GOODS_PRICE",
+    "AGE_YEARS",
+    "EMPLOYMENT_YEARS",
+    "EXT_SOURCE_1",
+    "EXT_SOURCE_2",
+    "EXT_SOURCE_3",
+    "EXT_SOURCE_MEAN",
+    "CREDIT_INCOME_RATIO",
+    "ANNUITY_INCOME_RATIO",
+    "GOODS_CREDIT_RATIO",
+    "CNT_CHILDREN",
+    "REGION_RATING_CLIENT"
+  ],
+  "categorical_features": [
+    "NAME_CONTRACT_TYPE",
+    "NAME_EDUCATION_TYPE",
+    "NAME_FAMILY_STATUS",
+    "NAME_INCOME_TYPE",
+    "FLAG_OWN_REALTY",
+    "FLAG_OWN_CAR",
+    "CODE_GENDER"
+  ],
+  "cost_fn": 5.0,
+  "cost_fp": 1.0,
+  "artifact_bytes": 82034,
+  "disclaimer": "Modèle entraîné sur une fixture synthétique. Aucune valeur pour une décision de crédit."
+}

@@ -1,0 +1,14 @@
+.venv
+.git
+.github
+mlruns
+data/raw
+data/fixtures
+frontend/node_modules
+frontend/dist
+tests
+notebooks
+**/__pycache__
+models/research
+*.md
+!reports/metrics.json
