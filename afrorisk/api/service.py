@@ -72,7 +72,6 @@ class Predictor:
                     "NAME_INCOME_TYPE": payload.name_income_type,
                     "FLAG_OWN_REALTY": payload.flag_own_realty,
                     "FLAG_OWN_CAR": payload.flag_own_car,
-                    "CODE_GENDER": payload.code_gender,
                 }
             ]
         )

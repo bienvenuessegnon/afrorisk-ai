@@ -92,7 +92,6 @@ def options():
         "family_statuses": FORM_FAMILY_STATUSES,
         "income_types": FORM_INCOME_TYPES,
         "yes_no": ["Y", "N"],
-        "genders": ["F", "M"],
         "region_ratings": [1, 2, 3],
     }
 

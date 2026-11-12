@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from afrorisk.config import METRICS_PATH, MODEL_LABELS, README_PATH
+from afrorisk.config import METRICS_PATH, MODEL_LABELS, PREVIOUS_HOME_CREDIT, README_PATH
 
 START = "<!-- RESULTS:START -->"
 END = "<!-- RESULTS:END -->"
@@ -33,6 +33,46 @@ def _table(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+
+def _delta(after: float, before: float) -> str:
+    gap = after - before
+    sign = "+" if gap >= 0 else ""
+    return f"{_fmt(after)} ({sign}{_fmt(gap)})"
+
+
+def _before_after(metrics: dict) -> str:
+    if metrics.get("placeholder") or metrics.get("data_source") != "home_credit":
+        return ""
+    previous = PREVIOUS_HOME_CREDIT
+    served = metrics["served"]["metrics"]
+    research = metrics["research"]["metrics"]
+    lines = [
+        "### Comparaison avec la première version",
+        "",
+        "La première version était évaluée en 3 plis, avec moins de variables dérivées, "
+        "et le sexe figurait encore parmi les features du modèle servi.",
+        "",
+        "| Portée | ROC-AUC | PR-AUC | Précision | Rappel | F1 | Seuil |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for scope, before, after in (
+        ("Modèle servi", previous["served"], served),
+        ("Modèle de recherche", previous["research"], research),
+    ):
+        lines.append(
+            "| {scope} | {roc} | {pr} | {precision} | {recall} | {f1} | {threshold} |".format(
+                scope=scope,
+                roc=_delta(after["roc_auc"], before["roc_auc"]),
+                pr=_delta(after["pr_auc"], before["pr_auc"]),
+                precision=_delta(after["precision"], before["precision"]),
+                recall=_delta(after["recall"], before["recall"]),
+                f1=_delta(after["f1"], before["f1"]),
+                threshold=f"{before['threshold']:.2f} → {after['threshold']:.2f}",
+            )
+        )
+    return "\n".join(lines)
+
+
 def render_results(metrics: dict) -> str:
     source = metrics["data_source"]
     if metrics.get("placeholder"):
@@ -52,6 +92,13 @@ def render_results(metrics: dict) -> str:
     served = metrics["served"]
     research = metrics["research"]
     matrix = served["metrics"]["confusion_matrix"]
+    gender_note = (
+        "Le modèle servi n'utilise pas le sexe (`CODE_GENDER`) : la variable a été retirée "
+        "du formulaire, de l'API et des features exposées."
+        if metrics.get("served_excludes_code_gender", True) and not metrics.get("placeholder")
+        else ""
+    )
+    comparison = _before_after(metrics)
     parts = [
         START,
         banner,
@@ -60,6 +107,10 @@ def render_results(metrics: dict) -> str:
         "Le modèle retenu dans chaque portée est celui qui a le ROC-AUC hors échantillon "
         "le plus élevé. Précision, rappel et F1 sont calculés au seuil qui minimise "
         f"le coût {metrics['cost_fn']:.0f} × faux négatifs + {metrics['cost_fp']:.0f} × faux positifs.",
+        "",
+        gender_note,
+        "",
+        comparison,
         "",
         "### Modèle servi (variables du formulaire)",
         "",
@@ -81,7 +132,11 @@ def render_results(metrics: dict) -> str:
         "(`served.global_factors`) et sur le tableau de bord.",
         END,
     ]
-    return "\n".join(parts) + "\n"
+    rendered = "\n".join(part for part in parts if part is not None)
+    while "\n\n\n" in rendered:
+        rendered = rendered.replace("\n\n\n", "\n\n")
+    return rendered + "\n"
+
 
 
 def update_readme(metrics: dict, readme_path: Path | None = None) -> None:

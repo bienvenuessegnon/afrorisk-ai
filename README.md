@@ -16,7 +16,7 @@ agrégations (bureau, bureau_balance, previous_application,
              POS_CASH_balance, installments_payments, credit_card_balance)
         │
         ├── modèle de recherche (toutes les variables construites)
-        └── modèle servi (formulaire, ~18 saisies + ratios)
+        └── modèle servi (formulaire, saisies + variables dérivées, sans le sexe)
                 │
                 ▼
              SHAP  →  FastAPI  →  interface React
@@ -38,7 +38,18 @@ MLflow enregistre les métriques de chaque comparaison dans `mlruns/` (non versi
 <!-- RESULTS:START -->
 > Entraînement sur **Home Credit Default Risk** (307511 demandes, taux de défaut 8.1%). Usage pédagogique : ce n'est pas une décision d'octroi.
 
-Validation croisée stratifiée : 3 plis. Le modèle retenu dans chaque portée est celui qui a le ROC-AUC hors échantillon le plus élevé. Précision, rappel et F1 sont calculés au seuil qui minimise le coût 5 × faux négatifs + 1 × faux positifs.
+Validation croisée stratifiée : 5 plis. Le modèle retenu dans chaque portée est celui qui a le ROC-AUC hors échantillon le plus élevé. Précision, rappel et F1 sont calculés au seuil qui minimise le coût 5 × faux négatifs + 1 × faux positifs.
+
+Le modèle servi n'utilise pas le sexe (`CODE_GENDER`) : la variable a été retirée du formulaire, de l'API et des features exposées.
+
+### Comparaison avec la première version
+
+La première version était évaluée en 3 plis, avec moins de variables dérivées, et le sexe figurait encore parmi les features du modèle servi.
+
+| Portée | ROC-AUC | PR-AUC | Précision | Rappel | F1 | Seuil |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Modèle servi | 0.762 (+0.008) | 0.246 (+0.008) | 0.267 (+0.007) | 0.359 (+0.008) | 0.307 (+0.008) | 0.70 → 0.70 |
+| Modèle de recherche | 0.793 (+0.017) | 0.289 (+0.025) | 0.274 (+0.024) | 0.457 (-0.007) | 0.342 (+0.018) | 0.65 → 0.65 |
 
 ### Modèle servi (variables du formulaire)
 
@@ -46,25 +57,26 @@ Modèle retenu : **LightGBM**. Seuil de décision : **0.70**.
 
 | Modèle | ROC-AUC | PR-AUC | Précision | Rappel | F1 | Seuil |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| LightGBM | 0.755 | 0.238 | 0.261 | 0.351 | 0.299 | 0.700 |
-| XGBoost | 0.754 | 0.238 | 0.261 | 0.349 | 0.299 | 0.700 |
-| Forêt aléatoire | 0.747 | 0.228 | 0.230 | 0.409 | 0.294 | 0.600 |
-| Régression logistique | 0.742 | 0.221 | 0.249 | 0.333 | 0.284 | 0.700 |
-| Arbre de décision | 0.722 | 0.204 | 0.226 | 0.341 | 0.272 | 0.700 |
+| LightGBM | 0.762 | 0.246 | 0.267 | 0.359 | 0.307 | 0.700 |
+| XGBoost | 0.762 | 0.246 | 0.267 | 0.359 | 0.306 | 0.700 |
+| Forêt aléatoire | 0.745 | 0.227 | 0.247 | 0.352 | 0.291 | 0.650 |
+| Régression logistique | 0.744 | 0.225 | 0.250 | 0.337 | 0.287 | 0.700 |
+| Arbre de décision | 0.723 | 0.206 | 0.225 | 0.363 | 0.278 | 0.700 |
 
-Matrice de confusion du modèle servi, au seuil retenu, sur les prédictions hors pli (lignes = réel, colonnes = prédit, ordre non-défaut / défaut) : `[[257955, 24731], [16111, 8714]]`.
+Matrice de confusion du modèle servi, au seuil retenu, sur les prédictions hors pli (lignes = réel, colonnes = prédit, ordre non-défaut / défaut) : `[[258244, 24442], [15902, 8923]]`.
 
 ### Modèle de recherche (application + agrégations)
 
-Modèle retenu : **LightGBM**.
+Modèle retenu : **LightGBM (moyenne de germes)**.
 
 | Modèle | ROC-AUC | PR-AUC | Précision | Rappel | F1 | Seuil |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| LightGBM | 0.776 | 0.264 | 0.249 | 0.464 | 0.324 | 0.650 |
-| XGBoost | 0.773 | 0.262 | 0.249 | 0.457 | 0.322 | 0.650 |
-| Régression logistique | 0.761 | 0.241 | 0.259 | 0.370 | 0.305 | 0.700 |
-| Forêt aléatoire | 0.760 | 0.239 | 0.258 | 0.366 | 0.303 | 0.600 |
-| Arbre de décision | 0.721 | 0.202 | 0.254 | 0.245 | 0.249 | 0.750 |
+| LightGBM (moyenne de germes) | 0.793 | 0.289 | 0.274 | 0.457 | 0.342 | 0.650 |
+| LightGBM | 0.791 | 0.285 | 0.270 | 0.460 | 0.340 | 0.650 |
+| XGBoost | 0.790 | 0.283 | 0.260 | 0.485 | 0.339 | 0.650 |
+| Régression logistique | 0.775 | 0.258 | 0.269 | 0.402 | 0.323 | 0.700 |
+| Forêt aléatoire | 0.759 | 0.242 | 0.239 | 0.423 | 0.305 | 0.600 |
+| Arbre de décision | 0.724 | 0.203 | 0.223 | 0.367 | 0.278 | 0.700 |
 
 Les facteurs SHAP globaux du modèle servi sont dans `reports/metrics.json` (`served.global_factors`) et sur le tableau de bord.
 <!-- RESULTS:END -->
@@ -92,13 +104,12 @@ Le modèle servi ne reprend pas les centaines de colonnes brutes. L'analyste sai
 | Propriétaire immobilier | `FLAG_OWN_REALTY` |
 | Propriétaire d'un véhicule | `FLAG_OWN_CAR` |
 | Note de la région (1 à 3) | `REGION_RATING_CLIENT` |
-| Sexe, facultatif | `CODE_GENDER` |
 
-Le pipeline ajoute, sans les redemander : âge en années, ancienneté en années, moyenne des scores externes, crédit/revenu, annuité/revenu, prix du bien/crédit.
+Le pipeline ajoute, sans les redemander : âge en années, ancienneté en années, statistiques et interactions des scores externes, crédit/revenu, annuité/revenu, prix du bien/crédit, prix du bien/revenu, annuité/crédit, écart crédit − prix du bien, revenu par enfant et ancienneté relative à l'âge.
 
-Le modèle de recherche ajoute les agrégations des six tables secondaires (volumes, retards, taux de refus, utilisation de carte, etc.) ainsi que le logement et la profession. Ces variables ne sont pas au formulaire : elles ne sont pas connues d'un utilisateur qui ne dispose que du dossier courant.
+Le modèle de recherche ajoute les agrégations des six tables secondaires (volumes, fenêtres récentes, retards, taux de refus, utilisation de carte, etc.), des variables de dossier plus riches (logement, profession, organisme employeur, demandes bureau, documents) et, pour l'étude seulement, le sexe. Ces variables ne sont pas au formulaire : elles ne sont pas connues d'un utilisateur qui ne dispose que du dossier courant.
 
-Le sexe est facultatif. S'il est omis, la modalité `Non renseigné` est utilisée. Voir la section éthique.
+Le sexe a été retiré du modèle servi, du formulaire et de l'API. Voir la section éthique.
 
 ## Ce qui est livré dans le dépôt
 
@@ -146,7 +157,7 @@ python -m afrorisk.synthetic
 
 ## Entraînement
 
-Une commande suffit. Elle détecte `data/raw/application_train.csv`, compare les cinq modèles en validation croisée stratifiée, choisit le meilleur ROC-AUC pour la recherche et pour le service, recalcule un seuil de coût, écrit les explications SHAP, met à jour `reports/metrics.json` et la section Résultats de ce fichier, puis trace les runs MLflow.
+Une commande suffit. Elle détecte `data/raw/application_train.csv`, compare les cinq modèles en validation croisée stratifiée à 5 plis, règle LightGBM et XGBoost (arrêt anticipé, recherche d'hyperparamètres hors des plis finaux), évalue éventuellement une moyenne de germes ou un mélange si le ROC-AUC hors pli s'améliore, choisit le meilleur ROC-AUC pour la recherche et pour le service, recalcule un seuil de coût, écrit les explications SHAP, met à jour `reports/metrics.json` et la section Résultats de ce fichier, puis trace les runs MLflow.
 
 ```bash
 make train
@@ -160,10 +171,12 @@ Réglages utiles sur le jeu complet (plusieurs Go de RAM, tables `bureau_balance
 
 ```bash
 AFRORISK_FAST=1 AFRORISK_MAX_ROWS=80000 python -m afrorisk.train
-AFRORISK_CV_FOLDS=5 python -m afrorisk.train
+AFRORISK_CV_FOLDS=3 python -m afrorisk.train
+AFRORISK_OPTUNA=0 python -m afrorisk.train
+AFRORISK_OPTUNA_TRIALS=12 python -m afrorisk.train
 ```
 
-`AFRORISK_FAST=1` réduit le nombre d'arbres. `AFRORISK_MAX_ROWS` tire un échantillon stratifié. Sans ces variables, un petit jeu (la fixture, ou moins de 8 000 lignes) utilise déjà le mode court ; le jeu complet utilise des modèles plus longs et 3 plis au-delà de 20 000 lignes.
+`AFRORISK_FAST=1` réduit le nombre d'arbres et désactive la recherche d'hyperparamètres. `AFRORISK_MAX_ROWS` tire un échantillon stratifié. `AFRORISK_OPTUNA=0` garde les hyperparamètres par défaut. Sans ces variables, un petit jeu (la fixture, ou moins de 8 000 lignes) utilise déjà le mode court ; le jeu complet utilise 5 plis, l'arrêt anticipé et une recherche d'hyperparamètres dont le hold-out est distinct de l'évaluation hors pli.
 
 Consulter MLflow :
 
@@ -245,7 +258,7 @@ L'API embarque le modèle versionné dans `models/served` et `reports/metrics.js
 - Démonstration et formation. Pas un outil d'octroi.
 - Home Credit décrit une clientèle et une période qui ne sont pas celles du Bénin ni de l'Afrique de l'Ouest. Un score transporté tel quel est une extrapolation.
 - Tant que le modèle est marqué placeholder, il n'a vu que des lignes synthétiques. Ses probabilités n'ont aucune portée opérationnelle.
-- Le sexe est une variable sensible. Le formulaire permet de ne pas le renseigner. Même renseigné, il ne doit pas servir de motif de refus : les écarts qu'il capte reprennent souvent des biais historiques du jeu d'apprentissage.
+- Le sexe est une variable sensible. Il a été retiré du modèle servi, du formulaire et de l'API, précisément pour éviter qu'il ne pèse dans une estimation exposée. Il reste disponible dans le modèle de recherche, uniquement pour l'analyse, et n'entre pas dans une prédiction servie. Les écarts qu'il capterait dans le jeu d'apprentissage reprennent souvent des biais historiques, pas une règle d'octroi acceptable.
 - SHAP décrit le modèle, pas une cause. Un facteur « augmente le risque » au sens du score, pas au sens d'un mécanisme économique prouvé.
 - Le seuil 5 / 1 est un choix pédagogique (rater un défaut coûte plus cher que refuser un bon dossier). Un établissement doit le fixer avec ses propres coûts, et revoir le calibrage des probabilités.
 - Les tables secondaires sont agrégées comme de l'information déjà connue à la date de la demande (convention Home Credit : `DAYS_*` et `MONTHS_BALANCE` sont relatifs à cette date). La cible n'entre dans aucune variable. Cela n'empêche pas d'autres biais : population sélectionnée, scores externes opaques, valeurs manquantes informatives.

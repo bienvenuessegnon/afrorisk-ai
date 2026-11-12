@@ -3,6 +3,7 @@
 Usage : python -m afrorisk.train
 """
 
+import gc
 import json
 import os
 from datetime import datetime, timezone
@@ -15,22 +16,35 @@ import pandas as pd
 from afrorisk.config import (
     COST_FP,
     COST_FN,
-    FULL_EXTRA_CATEGORICAL,
-    FULL_EXTRA_NUMERIC,
     METRICS_PATH,
     MODELS_RESEARCH,
     MODELS_SERVED,
     RANDOM_STATE,
+    RESEARCH_CATEGORICAL,
+    RESEARCH_NUMERIC,
     ROOT,
     SERVED_CATEGORICAL,
     SERVED_NUMERIC,
+    TARGET_ENCODE_COLUMNS,
 )
 from afrorisk.eda import save_figures
 from afrorisk.explain import background_matrix, feature_sources, group_mean_abs, shap_matrix
 from afrorisk.features import build_modeling_table, research_feature_frame, served_feature_frame
 from afrorisk.io import load_tables
-from afrorisk.modeling import compare_models, fit_model, public_comparison
+from afrorisk.modeling import (
+    ProbabilityAverager,
+    blend_oof,
+    compare_models,
+    cross_validate,
+    fit_model,
+    optuna_enabled,
+    optuna_trials,
+    public_comparison,
+    tune_boosting,
+)
 from afrorisk.report import update_readme, write_metrics
+
+SEED_BLEND = (42, 7, 2020)
 
 
 def _limit_rows(frame: pd.DataFrame) -> pd.DataFrame:
@@ -52,8 +66,18 @@ def _selected(results: list[dict]) -> dict:
     return max(results, key=lambda item: item["roc_auc"])
 
 
-def _fit_scope(name, X, y, numeric, categorical, fast, destination):
-    pipeline = fit_model(name, X, y, numeric, categorical, fast=fast)
+def _fit_scope(name, X, y, numeric, categorical, fast, destination, params=None, target_encode=None, best_iteration=None):
+    pipeline = fit_model(
+        name,
+        X,
+        y,
+        numeric,
+        categorical,
+        fast=fast,
+        params=params,
+        target_encode=target_encode,
+        best_iteration=best_iteration,
+    )
     destination.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(pipeline, destination, compress=3)
     return pipeline
@@ -68,49 +92,278 @@ def _maybe_shrink(pipeline, X, y, numeric, categorical, fast, path):
     return pipeline, path.stat().st_size, True
 
 
+def _maybe_add_blends(results, X, y, numeric, categorical, n_splits, fast, params, target_encode):
+    """Ajoute une moyenne de germes LightGBM et un mélange LGBM/XGBoost si le ROC-AUC hors pli s'améliore."""
+    if fast or len(y) < 8000:
+        return results
+    by_name = {item["model"]: item for item in results}
+    if "lightgbm" not in by_name:
+        return results
+
+    lgbm = by_name["lightgbm"]
+    seed_oofs = [lgbm["oof_proba"]]
+    seed_iterations = [lgbm.get("best_iteration")]
+    for seed in SEED_BLEND:
+        if seed == RANDOM_STATE:
+            continue
+        print(f"  germe LightGBM supplémentaire : {seed}")
+        extra = cross_validate(
+            "lightgbm",
+            X,
+            y,
+            numeric,
+            categorical,
+            n_splits,
+            fast,
+            params=params.get("lightgbm") if params else None,
+            target_encode=target_encode,
+            random_state=seed,
+        )
+        seed_oofs.append(extra["oof_proba"])
+        if extra.get("best_iteration"):
+            seed_iterations.append(extra["best_iteration"])
+
+    if len(seed_oofs) > 1:
+        seeds = blend_oof("lightgbm_seeds", seed_oofs, y.to_numpy())
+        seeds["best_iteration"] = (
+            int(round(float(np.mean([item for item in seed_iterations if item]))))
+            if any(seed_iterations)
+            else lgbm.get("best_iteration")
+        )
+        seeds["seed_count"] = len(seed_oofs)
+        if seeds["roc_auc"] > lgbm["roc_auc"] + 0.0003:
+            print(f"  moyenne de germes : ROC-AUC {seeds['roc_auc']:.4f} (contre {lgbm['roc_auc']:.4f})")
+            results.append(seeds)
+        else:
+            print(
+                f"  moyenne de germes écartée : ROC-AUC {seeds['roc_auc']:.4f} "
+                f"(contre {lgbm['roc_auc']:.4f})"
+            )
+
+    if "xgboost" in by_name:
+        best_lgbm_oof = max(
+            (item for item in results if item["model"] in {"lightgbm", "lightgbm_seeds"}),
+            key=lambda item: item["roc_auc"],
+        )
+        mixed = blend_oof(
+            "lightgbm_xgboost_blend",
+            [best_lgbm_oof["oof_proba"], by_name["xgboost"]["oof_proba"]],
+            y.to_numpy(),
+            weights=[0.65, 0.35],
+        )
+        mixed["best_iteration"] = best_lgbm_oof.get("best_iteration")
+        if mixed["roc_auc"] > best_lgbm_oof["roc_auc"] + 0.0003:
+            print(
+                f"  mélange LGBM/XGB : ROC-AUC {mixed['roc_auc']:.4f} "
+                f"(contre {best_lgbm_oof['roc_auc']:.4f})"
+            )
+            results.append(mixed)
+        else:
+            print(
+                f"  mélange LGBM/XGB écarté : ROC-AUC {mixed['roc_auc']:.4f} "
+                f"(contre {best_lgbm_oof['roc_auc']:.4f})"
+            )
+
+    results.sort(key=lambda item: item["roc_auc"], reverse=True)
+    return results
+
+
+def _fit_selected_research(best, X, y, numeric, categorical, fast, params, target_encode, destination):
+    name = best["model"]
+    if name == "lightgbm_seeds":
+        pipelines = []
+        for seed in SEED_BLEND:
+            seed_params = dict((params or {}).get("lightgbm") or {})
+            seed_params["random_state"] = seed
+            pipelines.append(
+                fit_model(
+                    "lightgbm",
+                    X,
+                    y,
+                    numeric,
+                    categorical,
+                    fast=fast,
+                    params=seed_params,
+                    target_encode=target_encode,
+                    best_iteration=best.get("best_iteration"),
+                )
+            )
+        pipeline = ProbabilityAverager(pipelines)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(pipeline, destination, compress=3)
+        return pipeline
+    if name == "lightgbm_xgboost_blend":
+        lgbm_params = (params or {}).get("lightgbm")
+        xgb_params = (params or {}).get("xgboost")
+        lgbm = fit_model(
+            "lightgbm",
+            X,
+            y,
+            numeric,
+            categorical,
+            fast=fast,
+            params=lgbm_params,
+            target_encode=target_encode,
+            best_iteration=best.get("best_iteration"),
+        )
+        xgb = fit_model(
+            "xgboost",
+            X,
+            y,
+            numeric,
+            categorical,
+            fast=fast,
+            params=xgb_params,
+            target_encode=target_encode,
+        )
+        pipeline = ProbabilityAverager([lgbm, xgb], weights=[0.65, 0.35])
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(pipeline, destination, compress=3)
+        return pipeline
+    return _fit_scope(
+        name,
+        X,
+        y,
+        numeric,
+        categorical,
+        fast,
+        destination,
+        params=(params or {}).get(name),
+        target_encode=target_encode,
+        best_iteration=best.get("best_iteration"),
+    )
+
+
 def train() -> dict:
     tables, source = load_tables()
     print(f"Source des données : {source}")
+    application_for_eda = tables["application"].copy()
     frame = _limit_rows(build_modeling_table(tables))
+    del tables
+    gc.collect()
     if frame["TARGET"].nunique() < 2:
         raise RuntimeError("La cible ne contient qu'une classe : entraînement impossible.")
 
     y = frame["TARGET"].astype(int)
     X_served = served_feature_frame(frame)
     X_research = research_feature_frame(frame)
+    if "CODE_GENDER" in X_served.columns:
+        raise RuntimeError("CODE_GENDER ne doit pas figurer dans le modèle servi.")
     fast = len(frame) < 8_000 or os.environ.get("AFRORISK_FAST") == "1"
-    default_folds = 5 if len(frame) <= 20_000 else 3
-    n_splits = int(os.environ.get("AFRORISK_CV_FOLDS", default_folds))
+    n_splits = int(os.environ.get("AFRORISK_CV_FOLDS", 5 if not fast else 3))
     placeholder = source != "home_credit"
+    research_encode = TARGET_ENCODE_COLUMNS if not fast else []
 
-    print(f"{len(frame)} demandes, taux de défaut {y.mean():.3f}, fast={fast}, plis={n_splits}")
-    print("Modèle de recherche")
-    research_numeric = SERVED_NUMERIC + FULL_EXTRA_NUMERIC
-    research_categorical = SERVED_CATEGORICAL + FULL_EXTRA_CATEGORICAL
-    research_results = compare_models(
-        X_research, y, research_numeric, research_categorical, n_splits, fast
+    print(
+        f"{len(frame)} demandes, taux de défaut {y.mean():.3f}, fast={fast}, plis={n_splits}, "
+        f"variables recherche={X_research.shape[1]}, servies={X_served.shape[1]}"
     )
+
+    research_params: dict[str, dict] = {}
+    served_params: dict[str, dict] = {}
+    tuning = {"research": {}, "served": {}}
+    if optuna_enabled() and not fast:
+        lgbm_trials = optuna_trials(22)
+        xgb_trials = max(8, lgbm_trials // 2)
+        served_trials = max(12, lgbm_trials - 4)
+        research_params["lightgbm"] = tune_boosting(
+            "lightgbm",
+            X_research,
+            y,
+            RESEARCH_NUMERIC,
+            RESEARCH_CATEGORICAL,
+            fast,
+            n_trials=lgbm_trials,
+            timeout=int(os.environ.get("AFRORISK_OPTUNA_TIMEOUT", 3600)),
+            target_encode=research_encode,
+        )
+        research_params["xgboost"] = tune_boosting(
+            "xgboost",
+            X_research,
+            y,
+            RESEARCH_NUMERIC,
+            RESEARCH_CATEGORICAL,
+            fast,
+            n_trials=xgb_trials,
+            timeout=int(os.environ.get("AFRORISK_OPTUNA_XGB_TIMEOUT", 1800)),
+            target_encode=research_encode,
+        )
+        served_params["lightgbm"] = tune_boosting(
+            "lightgbm",
+            X_served,
+            y,
+            SERVED_NUMERIC,
+            SERVED_CATEGORICAL,
+            fast,
+            n_trials=served_trials,
+            timeout=int(os.environ.get("AFRORISK_OPTUNA_SERVED_TIMEOUT", 1800)),
+        )
+        served_params["xgboost"] = tune_boosting(
+            "xgboost",
+            X_served,
+            y,
+            SERVED_NUMERIC,
+            SERVED_CATEGORICAL,
+            fast,
+            n_trials=max(8, served_trials // 2),
+            timeout=int(os.environ.get("AFRORISK_OPTUNA_SERVED_XGB_TIMEOUT", 900)),
+        )
+        research_params = {key: value for key, value in research_params.items() if value}
+        served_params = {key: value for key, value in served_params.items() if value}
+        tuning = {"research": research_params, "served": served_params}
+
+    print("Modèle de recherche")
+    research_results = compare_models(
+        X_research,
+        y,
+        RESEARCH_NUMERIC,
+        RESEARCH_CATEGORICAL,
+        n_splits,
+        fast,
+        param_overrides=research_params,
+        target_encode=research_encode,
+    )
+    research_results = _maybe_add_blends(
+        research_results,
+        X_research,
+        y,
+        RESEARCH_NUMERIC,
+        RESEARCH_CATEGORICAL,
+        n_splits,
+        fast,
+        research_params,
+        research_encode,
+    )
+
     print("Modèle servi")
     served_results = compare_models(
-        X_served, y, SERVED_NUMERIC, SERVED_CATEGORICAL, n_splits, fast
+        X_served,
+        y,
+        SERVED_NUMERIC,
+        SERVED_CATEGORICAL,
+        n_splits,
+        fast,
+        param_overrides=served_params,
     )
 
     best_research = _selected(research_results)
     best_served = _selected(served_results)
     print(
-        f"Recherche : {best_research['model']} (ROC-AUC {best_research['roc_auc']:.3f}) | "
-        f"servi : {best_served['model']} (ROC-AUC {best_served['roc_auc']:.3f})"
+        f"Recherche : {best_research['model']} (ROC-AUC {best_research['roc_auc']:.4f}) | "
+        f"servi : {best_served['model']} (ROC-AUC {best_served['roc_auc']:.4f})"
     )
 
     MODELS_RESEARCH.mkdir(parents=True, exist_ok=True)
     MODELS_SERVED.mkdir(parents=True, exist_ok=True)
-    _fit_scope(
-        best_research["model"],
+    _fit_selected_research(
+        best_research,
         X_research,
         y,
-        research_numeric,
-        research_categorical,
+        RESEARCH_NUMERIC,
+        RESEARCH_CATEGORICAL,
         fast,
+        research_params,
+        research_encode,
         MODELS_RESEARCH / "model.joblib",
     )
     served_pipeline = _fit_scope(
@@ -121,6 +374,8 @@ def train() -> dict:
         SERVED_CATEGORICAL,
         fast,
         MODELS_SERVED / "model.joblib",
+        params=served_params.get(best_served["model"]),
+        best_iteration=best_served.get("best_iteration"),
     )
     served_pipeline, artifact_bytes, shrunk = _maybe_shrink(
         served_pipeline,
@@ -144,6 +399,8 @@ def train() -> dict:
             f"SHAP a renvoyé {values.shape[1]} colonnes, le pipeline en attend {len(sources)}."
         )
     global_factors = group_mean_abs(values, sources)[:12]
+    if any(item["feature"] == "CODE_GENDER" for item in global_factors):
+        raise RuntimeError("CODE_GENDER apparaît encore dans les facteurs du modèle servi.")
 
     generated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     metadata = {
@@ -158,6 +415,7 @@ def train() -> dict:
         "cost_fn": COST_FN,
         "cost_fp": COST_FP,
         "artifact_bytes": int(artifact_bytes),
+        "excludes_code_gender": True,
         "disclaimer": (
             "Modèle entraîné sur une fixture synthétique. Aucune valeur pour une décision de crédit."
             if placeholder
@@ -179,6 +437,10 @@ def train() -> dict:
         "cost_fn": COST_FN,
         "cost_fp": COST_FP,
         "generated_at": generated_at,
+        "served_excludes_code_gender": True,
+        "n_features_served": int(X_served.shape[1]),
+        "n_features_research": int(X_research.shape[1]),
+        "tuning": tuning,
         "served": {
             "selected_model": served_name,
             "threshold": served_metrics_row["threshold"],
@@ -216,20 +478,25 @@ def train() -> dict:
 
     mlflow.set_tracking_uri(str(ROOT / "mlruns"))
     mlflow.set_experiment("afrorisk")
-    for scope, results in (("research", research_results), ("served", served_results)):
+    for scope, results, scope_params in (
+        ("research", research_results, research_params),
+        ("served", served_results, served_params),
+    ):
         for item in results:
             with mlflow.start_run(run_name=f"{scope}-{item['model']}"):
-                mlflow.log_params(
-                    {
-                        "scope": scope,
-                        "model": item["model"],
-                        "data_source": source,
-                        "placeholder": placeholder,
-                        "fast_mode": fast,
-                        "cv_folds": n_splits,
-                        "n_rows": int(len(frame)),
-                    }
-                )
+                logged_params = {
+                    "scope": scope,
+                    "model": item["model"],
+                    "data_source": source,
+                    "placeholder": placeholder,
+                    "fast_mode": fast,
+                    "cv_folds": n_splits,
+                    "n_rows": int(len(frame)),
+                }
+                tuned = scope_params.get(item["model"], {}) if item["model"] in scope_params else {}
+                for key, value in tuned.items():
+                    logged_params[f"tune_{key}"] = value
+                mlflow.log_params({key: value for key, value in logged_params.items() if value is not None})
                 mlflow.log_metrics(
                     {
                         "roc_auc": item["roc_auc"],
@@ -242,7 +509,7 @@ def train() -> dict:
                 )
 
     print("Figures EDA")
-    save_figures(tables["application"], source)
+    save_figures(application_for_eda, source)
     print(f"Métriques : {METRICS_PATH}")
     print(f"Modèle servi : {MODELS_SERVED / 'model.joblib'} ({artifact_bytes} octets)")
     return metrics

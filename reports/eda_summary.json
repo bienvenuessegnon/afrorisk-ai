@@ -1,6 +1,6 @@
 {
   "rows": 307511,
-  "columns": 27,
+  "columns": 70,
   "duplicate_ids": 0,
   "target_rate": 0.08072881945686496,
   "target_counts": {
@@ -10,14 +10,21 @@
   "employment_sentinel": 55374,
   "age_mean": 43.906899566990106,
   "missing_top": {
+    "OWN_CAR_AGE": 0.6599,
     "EXT_SOURCE_1": 0.5638,
     "OCCUPATION_TYPE": 0.3135,
     "EXT_SOURCE_3": 0.1983,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 0.135,
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0.135,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 0.135,
+    "AMT_REQ_CREDIT_BUREAU_MON": 0.135,
     "AMT_REQ_CREDIT_BUREAU_YEAR": 0.135,
-    "EXT_SOURCE_2": 0.0021,
-    "AMT_GOODS_PRICE": 0.0009,
-    "AMT_ANNUITY": 0.0,
-    "CNT_FAM_MEMBERS": 0.0
+    "AMT_REQ_CREDIT_BUREAU_QRT": 0.135,
+    "NAME_TYPE_SUITE": 0.0042,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 0.0033,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 0.0033,
+    "OBS_30_CNT_SOCIAL_CIRCLE": 0.0033,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 0.0033
   },
   "source": "home_credit"
 }

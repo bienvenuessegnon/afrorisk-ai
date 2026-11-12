@@ -3,7 +3,7 @@
   "placeholder": false,
   "data_source": "home_credit",
   "n_rows": 307511,
-  "trained_at": "2026-11-12T14:46:32+00:00",
+  "trained_at": "2026-11-12T19:31:26+00:00",
   "threshold": 0.7,
   "numeric_features": [
     "AMT_INCOME_TOTAL",
@@ -16,9 +16,23 @@
     "EXT_SOURCE_2",
     "EXT_SOURCE_3",
     "EXT_SOURCE_MEAN",
+    "EXT_SOURCE_MIN",
+    "EXT_SOURCE_MAX",
+    "EXT_SOURCE_STD",
+    "EXT_SOURCE_PROD",
+    "EXT_SOURCE_MISSING",
     "CREDIT_INCOME_RATIO",
     "ANNUITY_INCOME_RATIO",
     "GOODS_CREDIT_RATIO",
+    "GOODS_INCOME_RATIO",
+    "PAYMENT_RATE",
+    "CREDIT_GOODS_DIFF",
+    "INCOME_PER_CHILD",
+    "EMPLOYMENT_AGE_RATIO",
+    "EXT_SOURCE_1_AGE",
+    "EXT_SOURCE_2_AGE",
+    "EXT_SOURCE_3_AGE",
+    "EXT_SOURCE_MEAN_EMPLOYMENT",
     "CNT_CHILDREN",
     "REGION_RATING_CLIENT"
   ],
@@ -28,11 +42,11 @@
     "NAME_FAMILY_STATUS",
     "NAME_INCOME_TYPE",
     "FLAG_OWN_REALTY",
-    "FLAG_OWN_CAR",
-    "CODE_GENDER"
+    "FLAG_OWN_CAR"
   ],
   "cost_fn": 5.0,
   "cost_fp": 1.0,
-  "artifact_bytes": 398010,
+  "artifact_bytes": 545631,
+  "excludes_code_gender": true,
   "disclaimer": "Modèle entraîné sur Home Credit. Aide à la lecture uniquement, pas une décision d'octroi."
 }

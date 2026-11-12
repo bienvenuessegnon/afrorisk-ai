@@ -106,20 +106,6 @@ export default function BorrowerForm({ form, onChange, onSubmit, pending }) {
             ]}
           />
         </Field>
-        <Field
-          label="Sexe (facultatif)"
-          hint="Variable sensible. La laisser vide évite de l'utiliser comme un critère."
-        >
-          <Select
-            value={form.code_gender}
-            onChange={set("code_gender")}
-            options={[
-              ["", "Non renseigné"],
-              ["F", "Femme"],
-              ["M", "Homme"],
-            ]}
-          />
-        </Field>
       </div>
       <div className="form-actions">
         <button type="submit" disabled={pending}>

@@ -54,10 +54,6 @@ def test_predict_valid_and_invalid(client):
     assert {"feature", "label", "contribution", "direction"} <= set(body["factors"][0])
     assert "placeholder" in body["model"]
 
-    missing_gender = dict(VALID)
-    missing_gender["code_gender"] = None
-    assert client.post("/predict", json=missing_gender).status_code == 200
-
     rejected = client.post("/predict", json={**VALID, "age_years": 12})
     assert rejected.status_code == 422
     rejected = client.post("/predict", json={**VALID, "amt_income_total": -5})
@@ -82,4 +78,12 @@ def test_metrics_summary_contract(client):
         "xgboost",
         "lightgbm",
     }
-    assert len(body["research"]["comparison"]) == 5
+    research_names = {item["model"] for item in body["research"]["comparison"]}
+    assert {
+        "logistic_regression",
+        "decision_tree",
+        "random_forest",
+        "xgboost",
+        "lightgbm",
+    } <= research_names
+    assert "CODE_GENDER" not in {item.get("feature") for item in served["global_factors"]}

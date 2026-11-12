@@ -27,7 +27,6 @@ IncomeType = Literal[
     "Unemployed",
 ]
 YesNo = Literal["Y", "N"]
-Gender = Literal["M", "F"]
 
 
 class BorrowerInput(BaseModel):
@@ -48,4 +47,3 @@ class BorrowerInput(BaseModel):
     flag_own_realty: YesNo
     flag_own_car: YesNo = "N"
     region_rating_client: int = Field(..., ge=1, le=3, examples=[2])
-    code_gender: Gender | None = None

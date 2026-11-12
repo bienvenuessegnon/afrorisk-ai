@@ -35,7 +35,11 @@ def test_employment_sentinel_and_ratios():
     assert out.loc[0, "AGE_YEARS"] == pytest.approx(100.0)
     assert pd.isna(out.loc[0, "EMPLOYMENT_YEARS"])
     assert out.loc[0, "CREDIT_INCOME_RATIO"] == pytest.approx(2.0)
+    assert out.loc[0, "PAYMENT_RATE"] == pytest.approx(0.05)
     assert out.loc[0, "EXT_SOURCE_MEAN"] == pytest.approx(0.4)
+    assert out.loc[0, "EXT_SOURCE_MIN"] == pytest.approx(0.2)
+    assert out.loc[0, "EXT_SOURCE_MAX"] == pytest.approx(0.6)
+    assert out.loc[0, "EXT_SOURCE_MISSING"] == pytest.approx(0.0)
     assert out.loc[0, "CODE_GENDER"] == "Non renseigné"
 
 
@@ -71,6 +75,7 @@ def test_target_does_not_change_features():
     pd.testing.assert_frame_equal(original[features], changed[features])
     served = served_feature_frame(original)
     assert "TARGET" not in served.columns
+    assert "CODE_GENDER" not in served.columns
     assert list(served.columns) == SERVED_NUMERIC + SERVED_CATEGORICAL
     research = research_feature_frame(original)
     assert "TARGET" not in research.columns

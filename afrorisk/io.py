@@ -33,5 +33,17 @@ def load_tables(directory: Path | None = None) -> tuple[dict[str, pd.DataFrame],
                 "Téléchargez les données avec scripts/download_data.sh "
                 "ou créez la fixture avec python -m afrorisk.synthetic."
             )
-        tables[key] = pd.read_csv(path, usecols=TABLE_COLUMNS[key])
+        available = set(pd.read_csv(path, nrows=0).columns)
+        usecols = [column for column in TABLE_COLUMNS[key] if column in available]
+        required = set()
+        if key == "application":
+            required = {"SK_ID_CURR", "TARGET"}
+        elif key == "bureau_balance":
+            required = {"SK_ID_BUREAU"}
+        elif TABLE_COLUMNS[key]:
+            required = {"SK_ID_CURR"}
+        missing_required = required - available
+        if missing_required:
+            raise ValueError(f"{path} sans colonnes obligatoires : {sorted(missing_required)}")
+        tables[key] = pd.read_csv(path, usecols=usecols)
     return tables, source

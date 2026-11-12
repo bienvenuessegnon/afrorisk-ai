@@ -53,7 +53,6 @@ export const EMPTY_FORM = {
   flag_own_realty: "Y",
   flag_own_car: "N",
   region_rating_client: "2",
-  code_gender: "",
 };
 
 export const EXAMPLE_FORM = {
@@ -110,6 +109,5 @@ export function toPayload(form) {
     flag_own_realty: form.flag_own_realty,
     flag_own_car: form.flag_own_car,
     region_rating_client: Number(form.region_rating_client),
-    code_gender: form.code_gender || null,
   };
 }
