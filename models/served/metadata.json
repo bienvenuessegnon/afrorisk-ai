@@ -1,10 +1,10 @@
 {
-  "model_name": "random_forest",
-  "placeholder": true,
-  "data_source": "synthetic_fixture",
-  "n_rows": 800,
-  "trained_at": "2026-11-12T14:32:14+00:00",
-  "threshold": 0.35,
+  "model_name": "lightgbm",
+  "placeholder": false,
+  "data_source": "home_credit",
+  "n_rows": 307511,
+  "trained_at": "2026-11-12T14:46:32+00:00",
+  "threshold": 0.7,
   "numeric_features": [
     "AMT_INCOME_TOTAL",
     "AMT_CREDIT",
@@ -33,6 +33,6 @@
   ],
   "cost_fn": 5.0,
   "cost_fp": 1.0,
-  "artifact_bytes": 82034,
-  "disclaimer": "Modèle entraîné sur une fixture synthétique. Aucune valeur pour une décision de crédit."
+  "artifact_bytes": 398010,
+  "disclaimer": "Modèle entraîné sur Home Credit. Aide à la lecture uniquement, pas une décision d'octroi."
 }

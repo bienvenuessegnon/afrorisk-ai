@@ -36,35 +36,35 @@ MLflow enregistre les métriques de chaque comparaison dans `mlruns/` (non versi
 ## Résultats
 
 <!-- RESULTS:START -->
-> **Placeholder.** Ces chiffres viennent de la fixture synthétique (`synthetic_fixture`, 800 demandes, taux de défaut 15.9%). Ils ne mesurent pas Home Credit et ne valent pas une performance réelle.
+> Entraînement sur **Home Credit Default Risk** (307511 demandes, taux de défaut 8.1%). Usage pédagogique : ce n'est pas une décision d'octroi.
 
-Validation croisée stratifiée : 5 plis. Le modèle retenu dans chaque portée est celui qui a le ROC-AUC hors échantillon le plus élevé. Précision, rappel et F1 sont calculés au seuil qui minimise le coût 5 × faux négatifs + 1 × faux positifs.
+Validation croisée stratifiée : 3 plis. Le modèle retenu dans chaque portée est celui qui a le ROC-AUC hors échantillon le plus élevé. Précision, rappel et F1 sont calculés au seuil qui minimise le coût 5 × faux négatifs + 1 × faux positifs.
 
 ### Modèle servi (variables du formulaire)
 
-Modèle retenu : **Forêt aléatoire**. Seuil de décision : **0.35**.
+Modèle retenu : **LightGBM**. Seuil de décision : **0.70**.
 
 | Modèle | ROC-AUC | PR-AUC | Précision | Rappel | F1 | Seuil |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Forêt aléatoire | 0.598 | 0.204 | 0.196 | 0.606 | 0.297 | 0.350 |
-| LightGBM | 0.584 | 0.188 | 0.204 | 0.677 | 0.313 | 0.300 |
-| Arbre de décision | 0.580 | 0.190 | 0.197 | 0.654 | 0.303 | 0.350 |
-| XGBoost | 0.578 | 0.190 | 0.216 | 0.354 | 0.269 | 0.500 |
-| Régression logistique | 0.575 | 0.206 | 0.247 | 0.331 | 0.283 | 0.600 |
+| LightGBM | 0.755 | 0.238 | 0.261 | 0.351 | 0.299 | 0.700 |
+| XGBoost | 0.754 | 0.238 | 0.261 | 0.349 | 0.299 | 0.700 |
+| Forêt aléatoire | 0.747 | 0.228 | 0.230 | 0.409 | 0.294 | 0.600 |
+| Régression logistique | 0.742 | 0.221 | 0.249 | 0.333 | 0.284 | 0.700 |
+| Arbre de décision | 0.722 | 0.204 | 0.226 | 0.341 | 0.272 | 0.700 |
 
-Matrice de confusion du modèle servi, au seuil retenu, sur les prédictions hors pli (lignes = réel, colonnes = prédit, ordre non-défaut / défaut) : `[[358, 315], [50, 77]]`.
+Matrice de confusion du modèle servi, au seuil retenu, sur les prédictions hors pli (lignes = réel, colonnes = prédit, ordre non-défaut / défaut) : `[[257955, 24731], [16111, 8714]]`.
 
 ### Modèle de recherche (application + agrégations)
 
-Modèle retenu : **XGBoost**.
+Modèle retenu : **LightGBM**.
 
 | Modèle | ROC-AUC | PR-AUC | Précision | Rappel | F1 | Seuil |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| XGBoost | 0.625 | 0.217 | 0.214 | 0.764 | 0.334 | 0.300 |
-| Forêt aléatoire | 0.624 | 0.244 | 0.217 | 0.598 | 0.319 | 0.350 |
-| LightGBM | 0.622 | 0.224 | 0.248 | 0.417 | 0.311 | 0.450 |
-| Arbre de décision | 0.621 | 0.229 | 0.242 | 0.433 | 0.311 | 0.700 |
-| Régression logistique | 0.560 | 0.190 | 0.221 | 0.354 | 0.272 | 0.600 |
+| LightGBM | 0.776 | 0.264 | 0.249 | 0.464 | 0.324 | 0.650 |
+| XGBoost | 0.773 | 0.262 | 0.249 | 0.457 | 0.322 | 0.650 |
+| Régression logistique | 0.761 | 0.241 | 0.259 | 0.370 | 0.305 | 0.700 |
+| Forêt aléatoire | 0.760 | 0.239 | 0.258 | 0.366 | 0.303 | 0.600 |
+| Arbre de décision | 0.721 | 0.202 | 0.254 | 0.245 | 0.249 | 0.750 |
 
 Les facteurs SHAP globaux du modèle servi sont dans `reports/metrics.json` (`served.global_factors`) et sur le tableau de bord.
 <!-- RESULTS:END -->
