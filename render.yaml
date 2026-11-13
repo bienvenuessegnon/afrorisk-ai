@@ -3,9 +3,21 @@ services:
     name: afrorisk-api
     runtime: docker
     plan: free
+    region: frankfurt
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: CORS_ORIGINS
-        sync: false
+        value: https://afrorisk-ai.onrender.com
+
+  - type: web
+    name: afrorisk-ai
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://afrorisk-api.onrender.com
+      - key: PYTHON_VERSION
+        value: "3.12.8"
