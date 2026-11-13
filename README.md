@@ -2,13 +2,15 @@
 
 Démo : [application](https://afrorisk-ai.onrender.com) · [API](https://afrorisk-api.onrender.com) ([/health](https://afrorisk-api.onrender.com/health), [/docs](https://afrorisk-api.onrender.com/docs)).
 
+![Analyse d'un dossier sur l'application](docs/images/app.png)
+
 Sur l'offre gratuite de Render, l'API se met en veille après environ 15 minutes d'inactivité. La première requête peut alors prendre 30 à 60 secondes.
 
 Estimation du risque de défaut de crédit, avec les facteurs qui poussent le score vers le haut ou vers le bas.
 
 AfroRisk AI — Turning financial data into explainable risk intelligence.
 
-Le service sert à lire un dossier. Il ne décide pas d'accorder ou de refuser un crédit.
+Le service sert à lire un dossier. Il ne décide pas d'accorder ou de refuser un crédit. La [carte du modèle](docs/MODEL_CARD.md) précise l'usage prévu, les métriques et les limites.
 
 ## Architecture
 
@@ -202,7 +204,18 @@ pytest
 cd frontend && npm run build
 ```
 
-Les tests chargent la fixture, vérifient que la cible ne modifie pas les variables, et interrogent l'API (validation Pydantic, prédiction, `/health`, `/docs`, `/metrics-summary`).
+Les tests chargent la fixture, vérifient que la cible ne modifie pas les variables, et interrogent l'API (validation Pydantic, prédiction, `/health`, `/docs`, `/metrics-summary`, `/drift`).
+
+## Suivi de dérive
+
+Le PSI (Population Stability Index) compare, variable par variable, un lot récent au profil de référence du modèle servi. Ce profil est dans `models/served/reference_stats.json` : déciles numériques et effectifs des modalités, estimés sur les 200 lignes conservées avec le modèle, pas sur les 307 511 demandes. En dessous de 0,1 la variable est stable. Entre 0,1 et 0,25 l'écart est à surveiller. Au-delà de 0,25 la dérive est marquée.
+
+```bash
+python -m afrorisk.monitoring.drift fit
+python -m afrorisk.monitoring.drift report --recent lot.csv --format markdown
+```
+
+`lot.csv` doit contenir les colonnes du modèle servi. L'API expose aussi `POST /drift`, avec un corps `{"records": [ ... ]}` d'au moins 20 dossiers au format du formulaire. Le sexe n'en fait pas partie.
 
 ## Lancer l'application
 
@@ -220,6 +233,7 @@ Endpoints :
 | GET | `/health` | Disponibilité du modèle |
 | GET | `/metrics-summary` | Indicateurs pour le tableau de bord |
 | POST | `/predict` | Probabilité, classe, niveau de risque, principaux facteurs SHAP |
+| POST | `/drift` | PSI du lot envoyé contre la référence du modèle servi |
 | GET | `/docs` | Schéma OpenAPI |
 
 `CORS_ORIGINS` est une liste séparée par des virgules. Défaut : `http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:8080`, `http://127.0.0.1:8080`.
@@ -270,6 +284,26 @@ Site statique Render : `afrorisk-ai`.
 2. Utiliser le `Dockerfile` de la racine. Le port par défaut de l'image est `7860`, celui attendu par Spaces.
 3. Dans les secrets du Space, poser `CORS_ORIGINS` avec l'origine du front.
 4. Le Space sert l'API, pas l'interface React.
+
+## Adapter AfroRisk à la microfinance africaine
+
+Home Credit n'est pas un jeu de données africain. Les demandeurs, les produits et la période ne sont pas ceux d'une institution de microfinance en Afrique de l'Ouest. Reprendre le modèle tel quel serait une extrapolation.
+
+Une adaptation passe par les données locales, pas par un simple changement d'interface.
+
+- Historique de paiement mobile, par exemple MTN MoMo ou Moov Money : régularité des encaissements, soldes, retraits et transferts, plutôt qu'un relevé bancaire qui n'existe pas toujours.
+- Tontines et épargne collective : participation, tours de versement, incidents. Ce sont des signaux de discipline de paiement absents de Home Credit.
+- Revenus informels : le revenu annuel déclaré du formulaire est souvent instable ou incomplet. Mieux vaut une série d'encaissements observés qu'un montant unique.
+- Saisonnalité agricole : le calendrier des récoltes et des dépenses d'intrants change le risque d'un mois à l'autre. Une variable de mois ou de campagne est plus utile qu'un score annuel figé.
+- Garanties de groupe : la qualité du groupe et les incidents des autres membres, lorsque le crédit est solidaire.
+
+`EXT_SOURCE_1`, `EXT_SOURCE_2` et `EXT_SOURCE_3` sont des scores de bureau. Sans bureau de crédit, il ne faut pas les inventer. On les retire ou on les remplace par les signaux ci-dessus, puis on réentraîne. Les ratios crédit/revenu et annuité/revenu restent calculables si les montants locaux sont connus.
+
+Le seuil 0,70 minimise `5 × faux négatifs + 1 × faux positifs` sur Home Credit. Ce rapport de coûts n'a rien d'universel. Une institution le fixe avec ses propres pertes sur impayés et le coût d'un refus injustifié, puis le revoit quand le portefeuille change.
+
+Le cadre de la BCEAO et les règles de protection des données s'appliquent à un déploiement réel. Ce dépôt ne dit pas quelles obligations précises en découlent pour un établissement donné : il faut le vérifier auprès des textes et d'un conseil compétent. Au minimum, le score reste une aide à la lecture, le sexe n'est pas une variable du modèle servi, et les dossiers ne sont pas réutilisés au-delà de ce qui a été prévu.
+
+Le suivi de dérive décrit plus haut sert justement quand la population s'éloigne de Home Credit, ou quand la saison et le produit changent. Un PSI élevé sur le revenu, l'annuité ou le type de contrat est un signal pour recalibrer, pas une correction automatique.
 
 ## Éthique et limites
 
