@@ -1,5 +1,9 @@
 # AfroRisk AI
 
+Démo : [application](https://afrorisk-ai.onrender.com) · [API](https://afrorisk-api.onrender.com) ([/health](https://afrorisk-api.onrender.com/health), [/docs](https://afrorisk-api.onrender.com/docs)).
+
+Sur l'offre gratuite de Render, l'API se met en veille après environ 15 minutes d'inactivité. La première requête peut alors prendre 30 à 60 secondes.
+
 Estimation du risque de défaut de crédit, avec les facteurs qui poussent le score vers le haut ou vers le bas.
 
 AfroRisk AI — Turning financial data into explainable risk intelligence.
@@ -228,15 +232,37 @@ docker compose up --build
 
 ## Déploiement
 
-L'API embarque le modèle versionné dans `models/served` et `reports/metrics.json`. Un entraînement sur Home Credit doit donc être fait en local (ou sur une machine qui a les CSV), puis ces artefacts doivent être commités ou fournis à l'image avant le déploiement. Le tier gratuit de Render n'est pas un endroit pour réentraîner sur 300 000 lignes.
+L'API embarque le modèle versionné dans `models/served` et `reports/metrics.json`. L'entraînement se fait en local, puis ces fichiers sont commités. L'offre gratuite de Render ne sert pas à réentraîner 300 000 lignes.
 
-### API sur Render
+La configuration en production est dans `render.yaml`.
 
-1. Pousser le dépôt. Le fichier `render.yaml` décrit un service web Docker.
-2. Créer un Blueprint Render pointant sur ce dépôt, ou un Web Service dont le runtime est Docker, avec le `Dockerfile` à la racine.
-3. Définir `CORS_ORIGINS` avec l'URL exacte du front (par exemple `https://afrorisk.vercel.app`), sans barre oblique finale.
-4. Render injecte `PORT`. L'image le respecte. Le contrôle de santé est `/health`.
-5. Vérifier `https://<service>.onrender.com/health` puis `/docs`.
+### API
+
+Service web Docker sur Render : `afrorisk-api`, région Francfort, offre gratuite.
+
+- Le `Dockerfile` à la racine installe `libgomp1`, bibliothèque dont LightGBM a besoin au démarrage.
+- Contrôle de santé : `/health`.
+- `CORS_ORIGINS=https://afrorisk-ai.onrender.com`.
+- Render injecte `PORT`. L'image l'utilise.
+- Adresse : https://afrorisk-api.onrender.com (`/health`, `/docs`).
+
+### Interface
+
+Site statique Render : `afrorisk-ai`.
+
+- Commande de build : `cd frontend && npm ci && npm run build`.
+- Dossier publié : `frontend/dist`.
+- `VITE_API_URL=https://afrorisk-api.onrender.com`. Cette variable est lue au moment du build.
+- `PYTHON_VERSION=3.12.8`. Render détecte le `requirements.txt` à la racine et tente d'installer les dépendances Python. Avec Python 3.14, cette installation échoue : il n'y a pas de wheel `pyarrow` pour cette version.
+- Adresse : https://afrorisk-ai.onrender.com.
+
+### Alternative : interface sur Vercel
+
+1. Importer le dépôt. Répertoire racine : `frontend`.
+2. Commande de build : `npm run build`. Dossier de sortie : `dist`.
+3. `VITE_API_URL` égale à l'URL publique de l'API. Elle est lue au build.
+4. Ajouter l'URL du site Vercel à `CORS_ORIGINS` de l'API, sans barre oblique finale.
+5. `frontend/vercel.json` renvoie les routes vers `index.html`.
 
 ### Alternative : Hugging Face Spaces (Docker)
 
@@ -244,14 +270,6 @@ L'API embarque le modèle versionné dans `models/served` et `reports/metrics.js
 2. Utiliser le `Dockerfile` de la racine. Le port par défaut de l'image est `7860`, celui attendu par Spaces.
 3. Dans les secrets du Space, poser `CORS_ORIGINS` avec l'origine du front.
 4. Le Space sert l'API, pas l'interface React.
-
-### Interface sur Vercel
-
-1. Importer le dépôt. Répertoire racine du projet : `frontend`.
-2. Framework Vite. Commande de build : `npm run build`. Dossier de sortie : `dist`.
-3. Variable d'environnement `VITE_API_URL` = URL publique de l'API (`https://<service>.onrender.com`). Elle est lue au build.
-4. `frontend/vercel.json` renvoie les routes de l'application sur `index.html`.
-5. Redéployer le front après chaque changement de `VITE_API_URL`.
 
 ## Éthique et limites
 
