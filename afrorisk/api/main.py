@@ -3,13 +3,15 @@
 import os
 from contextlib import asynccontextmanager
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from afrorisk import __version__
-from afrorisk.api.schemas import BorrowerInput
+from afrorisk.api.schemas import BorrowerInput, DriftRequest
 from afrorisk.api.service import Predictor, metrics_summary
+from afrorisk.monitoring.drift import compare_to_reference, load_reference
 from afrorisk.schema import (
     CONTRACT_TYPES,
     EDUCATION_TYPES,
@@ -110,3 +112,19 @@ def predict(payload: BorrowerInput):
     if predictor is None:
         raise HTTPException(status_code=503, detail="Modèle servi indisponible.")
     return predictor.predict(payload)
+
+
+@app.post("/drift")
+def drift(payload: DriftRequest):
+    predictor = get_predictor()
+    if predictor is None:
+        raise HTTPException(status_code=503, detail="Modèle servi indisponible.")
+    try:
+        reference = load_reference()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    frame = pd.concat(
+        [predictor.frame_from_input(record) for record in payload.records],
+        ignore_index=True,
+    )
+    return compare_to_reference(frame, reference)
