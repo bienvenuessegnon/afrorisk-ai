@@ -8,7 +8,7 @@ Sur l'offre gratuite de Render, l'API se met en veille après environ 15 minutes
 
 Estimation du risque de défaut de crédit, avec les facteurs qui poussent le score vers le haut ou vers le bas.
 
-AfroRisk AI — Turning financial data into explainable risk intelligence.
+*Credit default risk scoring on Home Credit data, with a LightGBM model explained by SHAP, a FastAPI service and a React interface.*
 
 Le service sert à lire un dossier. Il ne décide pas d'accorder ou de refuser un crédit. La [carte du modèle](docs/MODEL_CARD.md) précise l'usage prévu, les métriques et les limites.
 
@@ -331,3 +331,7 @@ Dockerfile          API (Render et Hugging Face)
 render.yaml
 docker-compose.yml
 ```
+
+## Auteur
+
+[Bienvenu ESSEGNON](https://github.com/bienvenuessegnon)
